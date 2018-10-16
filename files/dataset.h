@@ -23,37 +23,17 @@ template <int size> struct DataSetLoader {
         std::ifstream fileStream(fileName);
         aria::csv::CsvParser parser(fileStream);
 
-        int maxId = 0;
         for (const auto &row : parser) {
             DataPoint<int, size> point;
 
             for (size_t i = 0; i < size; i++) {
-                const auto cellValue = row[i];
-                point.position[i] = std::stod(cellValue);
+                point.position[i] = std::stod(row[i]);
             }
-            const std::string label = row[size];
-
-            if (map.count(label) > 0) {
-                point.label = map[label];
-            } else {
-                map[label] = ++maxId;
-                point.label = maxId;
-            }
+            // const std::string label = row[size];
+            point.label = std::stoi(row[size]);
             dataSet.push_back(point);
         }
     }
-
-    std::string getLabelName(int label) {
-        for (const auto &val : map) {
-            if (val.second == label) {
-                return val.first;
-            }
-        }
-        throw std::runtime_error("label not found");
-    }
-
-  private:
-    std::unordered_map<std::string, int> map;
 };
 
 template <int size>

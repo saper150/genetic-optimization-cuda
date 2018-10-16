@@ -11,24 +11,28 @@
 
 #include "./fitness/BasicFitness.cuh"
 #include "./fitness/KnnFitness.cuh"
+#include "./fitness/test.h"
 
 int main() {
 
     try {
-        std::cout << "start" << std::endl;
-        DataSetLoader<4> loader("./processDataset/data/iris/iris-verify.csv");
 
-        KnnFitness<4> knnFitness(loader.dataSet);
+        KnnFitnessTest();
+        // std::cout << "start" << std::endl;
+        // DataSetLoader<4> loader("./processDataset/data/iris/iris-verify.csv");
 
-        BasicFitness<bool> basicFitness(100);
+        // KnnFitness<4> knnFitness(loader.dataSet);
 
-        Performance::mesure("all", [&]() {
-            GeneticAlgorithm<bool, KnnFitness<4>> gen(200, knnFitness);
+        // BasicFitness<bool> basicFitness(100);
 
-            for (int i = 0; i < 1000; i++) {
-                gen.iterate();
-            }
-        });
+        // Performance::mesure("all", [&]() {
+        //     GeneticAlgorithm<bool, KnnFitness<4>> gen(200, knnFitness);
+
+        //     for (int i = 0; i < 1000; i++) {
+        //         gen.iterate();
+        //     }
+        // });
+        cudaDeviceSynchronize();
         Performance::print();
     } catch (const std::runtime_error &re) {
         std::cout << "Runtime error: " << re.what() << std::endl;
