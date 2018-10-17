@@ -3,6 +3,7 @@
 #include "../files/dataset.h"
 #include "../genetics/Population.cuh"
 #include <iomanip>
+#include <sstream>
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
@@ -25,21 +26,44 @@ __device__ float distanceSquared(LabelDataPoint<atributeCount> a,
 }
 
 template <int atributeCount>
-__global__ void calculateNearestNeabours(float *distances, Neabour *neabours,
-                                         LabelDataPoint<atributeCount> *points,
-                                         const int size) {
+__global__ void
+calculateNearestNeabours(float *distances, Neabour *neabours,
+                         LabelDataPoint<atributeCount> *teaching,
+                         LabelDataPoint<atributeCount> *test, const int size) {
     const int idx = threadIdx.x + blockDim.x * blockIdx.x;
     const int idy = threadIdx.y + blockDim.y * blockIdx.y;
     if (idx >= size || idy >= size) {
         return;
     }
-    distances[idy * size + idx] = distanceSquared(points[idy], points[idx]);
-    neabours[idy * size + idx] = {points[idx].label, idx};
-
-    // printf("idx: %i, idy: %i\n", idx, idy);
+    distances[idy * size + idx] = distanceSquared(teaching[idy], test[idx]);
+    neabours[idy * size + idx] = {teaching[idx].label, idx};
 }
 
-template <int atributeCount, int k>
+struct ArrayValue {
+    int val;
+    int index;
+};
+
+struct ArrayWrapper {
+    ArrayValue wraped[2];
+};
+template <typename T>
+__device__ ArrayWrapper twoBiggestValues(int *arr, int size) {
+
+    ArrayValue a;
+    ArrayValue b;
+
+    for (size_t i = 0; i < size; i++) {
+        if (arr[i] >= a.val) {
+            b = a;
+            a.index = i;
+            a.val = arr[i];
+        }
+    }
+    return {{a, b}};
+}
+
+template <int atributeCount, int labelsCount, int k>
 __global__ void accuracyKernel(const DevicePopulation<bool> population,
                                const Neabour *nearestNeabours,
                                float *accuracy) {
@@ -53,24 +77,33 @@ __global__ void accuracyKernel(const DevicePopulation<bool> population,
     const auto specimen = getSpecimen(population, populationId);
     const auto neabours = nearestNeabours + rowId * population.genSize;
 
-    int correctCount = 0;
-    int foundCount = 0;
+    // int correctCount = 0;
+
+    int iterator = 0;
+    int labelsCounts[labelsCount] = {0};
+
+    // Neabour founded[k];
 
     for (size_t i = 1; i < population.genSize; i++) {
         if (specimen[neabours[i].index]) {
-            foundCount++;
-            correctCount += neabours[i].label == neabours[0].label ? 1 : 0;
-            if (foundCount >= k) {
-                if (correctCount >= (k / 2) + 1) {
-                    atomicAdd(&accuracy[populationId], 1.f);
-                }
+            labelsCounts[neabours[i].label]++;
+            iterator++;
+            if (iterator >= k) {
                 break;
             }
         }
     }
+
+    const auto iter = thrust::max_element(thrust::seq, labelsCounts,
+                                          labelsCounts + labelsCount);
+    const int position = iter - labelsCounts;
+
+    if (position == neabours[0].label) {
+        atomicAdd(&accuracy[populationId], 1.f);
+    }
 }
 
-template <int atributeCount, int k> struct KnnFitness {
+template <int atributeCount, int labelsCount, int k> struct KnnFitness {
 
     thrust::device_vector<Neabour> nearestNeabours;
     thrust::device_vector<float> sums;
@@ -80,6 +113,8 @@ template <int atributeCount, int k> struct KnnFitness {
 
     KnnFitness(const thrust::host_vector<LabelDataPoint<atributeCount>> &data)
         : nearestNeabours(data.size() * data.size()), dataSize(data.size()) {
+
+        validateLabelsCount(data);
 
         thrust::device_vector<float> distances(data.size() * data.size());
 
@@ -92,6 +127,7 @@ template <int atributeCount, int k> struct KnnFitness {
         calculateNearestNeabours<<<blocks, perBlock>>>(
             thrust::raw_pointer_cast(&distances[0]),
             thrust::raw_pointer_cast(&nearestNeabours[0]),
+            thrust::raw_pointer_cast(&deviceData[0]),
             thrust::raw_pointer_cast(&deviceData[0]), (int)data.size());
 
         thrust::host_vector<cudaStream_t> streams(data.size());
@@ -104,16 +140,34 @@ template <int atributeCount, int k> struct KnnFitness {
             cudaStreamDestroy(streams[i]);
         }
 
-        for (size_t i = 0; i < data.size(); i++) {
-            for (size_t j = 0; j < data.size(); j++) {
-                std::cout
-                    << std::setprecision(4)
-                    << ((Neabour)nearestNeabours[i * data.size() + j]).label
-                    << "|"
-                    << ((Neabour)nearestNeabours[i * data.size() + j]).index
-                    << "\t|";
-            }
-            std::cout << std::endl;
+        // for (size_t i = 0; i < data.size(); i++) {
+        //     for (size_t j = 0; j < data.size(); j++) {
+        //         std::cout
+        //             << std::setprecision(4)
+        //             << ((Neabour)nearestNeabours[i * data.size() + j]).label
+        //             << "|"
+        //             << ((Neabour)nearestNeabours[i * data.size() + j]).index
+        //             << "\t|";
+        //     }
+        //     std::cout << std::endl;
+        // }
+    }
+
+    void validateLabelsCount(
+        const thrust::host_vector<LabelDataPoint<atributeCount>> &data) {
+        const LabelDataPoint<atributeCount> max = *(thrust::max_element(
+            data.begin(), data.end(),
+            [](LabelDataPoint<atributeCount> a,
+               LabelDataPoint<atributeCount> b) { return a.label < b.label; }));
+
+        if ((max.label + 1) != labelsCount) {
+            std::cout << (max.label + 1) << "|" << labelsCount << "|"
+                      << (int)((max.label + 1) != labelsCount) << "\n";
+            std::ostringstream stringStream;
+            stringStream
+                << "labelsCount and actual labels does not match, expected "
+                << labelsCount << " got: " << (max.label + 1);
+            throw stringStream.str().c_str();
         }
     }
 
@@ -124,17 +178,17 @@ template <int atributeCount, int k> struct KnnFitness {
         const dim3 blocks = {(population.popSize() / threadsPerBlock.x) + 1,
                              (population.popSize() / threadsPerBlock.y) + 1, 1};
 
-        accuracyKernel<atributeCount, k><<<blocks, threadsPerBlock>>>(
-            population.toDevicePopulation(),
-            thrust::raw_pointer_cast(&nearestNeabours[0]),
-            thrust::raw_pointer_cast(&accuracy[0]));
+        accuracyKernel<atributeCount, labelsCount, k>
+            <<<blocks, threadsPerBlock>>>(
+                population.toDevicePopulation(),
+                thrust::raw_pointer_cast(&nearestNeabours[0]),
+                thrust::raw_pointer_cast(&accuracy[0]));
 
         thrust::transform(accuracy.begin(), accuracy.end(), accuracy.begin(),
                           [dataSize = dataSize] __device__(float acc) {
                               return acc / dataSize;
                           });
     }
-
     auto &operator()(Population<bool> &population,
                      thrust::device_vector<float> &fitness) {
 

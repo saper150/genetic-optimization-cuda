@@ -12,7 +12,7 @@ bool compf(float A, float B, float epsilon = 0.005f) {
 
 void shouldCalculateCorrectAccuracy() {
     DataSetLoader<4> loader("./fitness/testData1.csv");
-    KnnFitness<4, 3> knnFitness(loader.dataSet);
+    KnnFitness<4, 2, 3> knnFitness(loader.dataSet);
     thrust::device_vector<bool> testPop(loader.dataSet.size(), true);
     Population<bool> p = {testPop, (int)loader.dataSet.size()};
 
@@ -24,9 +24,25 @@ void shouldCalculateCorrectAccuracy() {
     }
 }
 
+void shouldTakeMagorityOfNeaboursAsLabel() {
+    DataSetLoader<4> loader("./fitness/testData2.csv");
+    KnnFitness<4, 4, 5> knnFitness(loader.dataSet);
+    Population<bool> p = {
+        thrust::device_vector<bool>(loader.dataSet.size(), true),
+        (int)loader.dataSet.size()};
+
+    thrust::device_vector<float> accuracy(1);
+    knnFitness.accuracy(p, accuracy);
+
+    if (!compf(accuracy[0], 0.5f)) {
+        std::cout << "shouldCalculateCorrectAccuracy FAILED" << std::endl;
+        std::cout << "expected 0.5f got " << accuracy[0] << std::endl;
+    }
+}
+
 void shouldExcludeVectorsNotpresentInGeneom() {
     DataSetLoader<4> loader("./fitness/testData1.csv");
-    KnnFitness<4, 3> knnFitness(loader.dataSet);
+    KnnFitness<4, 2, 3> knnFitness(loader.dataSet);
     thrust::device_vector<bool> testPop(loader.dataSet.size(), true);
     testPop[0] = false;
     testPop[1] = false;
@@ -51,12 +67,14 @@ void reductionLevelShouldCalculateCorrectReductionLevel() {
     if (!compf(reductionsLevels[0], 0.f)) {
         std::cout << "reductionLevelShouldCalculateCorrectReductionLevel FAILED"
                   << std::endl;
-        std::cout << "expected [0] 0.f got " << reductionsLevels[0] << std::endl;
+        std::cout << "expected [0] 0.f got " << reductionsLevels[0]
+                  << std::endl;
     }
     if (!compf(reductionsLevels[1], 0.f)) {
         std::cout << "reductionLevelShouldCalculateCorrectReductionLevel FAILED"
                   << std::endl;
-        std::cout << "expected [1] 0.f got " << reductionsLevels[0] << std::endl;
+        std::cout << "expected [1] 0.f got " << reductionsLevels[0]
+                  << std::endl;
     }
 }
 
@@ -98,8 +116,10 @@ void reductionLevelShouldResetReductionLevelValues() {
 void KnnFitnessTest() {
     std::cout << "Knn test run" << std::endl;
     shouldCalculateCorrectAccuracy();
+    shouldTakeMagorityOfNeaboursAsLabel();
     shouldExcludeVectorsNotpresentInGeneom();
     reductionLevelShouldCalculateCorrectReductionLevel();
     reductionLevelShouldCalculateCorrectReductionLevel2();
     reductionLevelShouldResetReductionLevelValues();
 }
+

@@ -36,7 +36,7 @@ template <typename T> struct BasicFitness {
             <<<1, population.popSize()>>>(thrust::raw_pointer_cast(&fitness[0]),
                                           population.toDevicePopulation());
 
-        const auto max = thrust::max_element(fitness.begin(), fitness.end());
-        std::cout << *max << std::endl;
+        // const auto max = thrust::max_element(fitness.begin(), fitness.end());
+        // std::cout << *max << std::endl;
     }
 };

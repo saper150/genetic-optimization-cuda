@@ -19,7 +19,8 @@ int main() {
 
         KnnFitnessTest();
         // std::cout << "start" << std::endl;
-        // DataSetLoader<4> loader("./processDataset/data/iris/iris-verify.csv");
+        // DataSetLoader<4>
+        // loader("./processDataset/data/iris/iris-verify.csv");
 
         // KnnFitness<4> knnFitness(loader.dataSet);
 
@@ -38,6 +39,8 @@ int main() {
         std::cout << "Runtime error: " << re.what() << std::endl;
     } catch (const std::exception &ex) {
         std::cout << "Error occurred: " << ex.what() << std::endl;
+    } catch (const char *message) {
+        std::cout << "ERROR: " << message << std::endl;
     } catch (...) {
         std::cout << "Unknown failure occurred. Possible memory corruption"
                   << std::endl;
