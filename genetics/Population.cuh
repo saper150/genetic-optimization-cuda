@@ -16,6 +16,9 @@ template <typename T> struct Population {
     DevicePopulation<T> toDevicePopulation() {
         return {thrust::raw_pointer_cast(&population[0]), popSize(), genSize};
     }
+    Population() {}
+    Population(int popSize, int genSize)
+        : genSize(genSize), population(popSize * genSize, true) {}
 };
 
 template <typename T>

@@ -9,11 +9,9 @@
 #include "./CrossOver.cuh"
 #include "./Mutation.cuh"
 
-#include <cstdlib>
-#include <ctime>
-
 #include "../Performance/Performance.h"
 #include "./Randomize.cuh"
+
 
 template <typename T, typename Selection, typename CrossOver, typename Mutation>
 __global__ void geneticKernel(DevicePopulation<T> populationA,
@@ -33,25 +31,21 @@ template <typename T, typename Fitness> class GeneticAlgorithm {
   private:
     Population<T> populationA;
     Population<T> populationB;
-    thrust::device_vector<float> fitnessValues;
     Fitness fitness;
     // SinglePointCrossover<T> crossover;
     MultiPointCrossover<T, 4> crossover;
     RouletteSelection<T> selection;
     Mutation<T> mutation = {0.002f};
     int popSize;
+    thrust::device_vector<float> fitnessValues;
 
   public:
     GeneticAlgorithm(const int popSize, Fitness fitness)
         : popSize(popSize), fitness(fitness), fitnessValues(popSize) {
 
         Performance::mesure("alocate population", [&]() {
-            populationA = {
-                thrust::device_vector<bool>(popSize * fitness.genSize()),
-                fitness.genSize()};
-            populationB = {
-                thrust::device_vector<bool>(popSize * fitness.genSize()),
-                fitness.genSize()};
+            populationA = Population<T>(popSize, fitness.genSize());
+            populationB = Population<T>(popSize, fitness.genSize());
         });
 
         Performance::mesure("randomize population",
@@ -67,5 +61,9 @@ template <typename T, typename Fitness> class GeneticAlgorithm {
             thrust::raw_pointer_cast(&fitnessValues[0]), selection, crossover,
             mutation);
         std::swap(populationA, populationB);
+    }
+
+    float maxFitness() {
+        return *(thrust::max_element(fitnessValues.begin(), fitnessValues.end()));
     }
 };
