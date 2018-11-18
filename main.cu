@@ -11,13 +11,12 @@
 
 #include "./fitness/BasicFitness.cuh"
 #include "./fitness/KnnFitness.cuh"
-#include "./fitness/test.h"
 
 int main() {
 
     try {
 
-        KnnFitnessTest();
+        // KnnFitnessTest();
         // std::cout << "start" << std::endl;
         // DataSetLoader<4>
         // loader("./processDataset/data/iris/iris-verify.csv");

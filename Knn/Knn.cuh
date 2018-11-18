@@ -2,6 +2,7 @@
 
 #include "../DeviceArray.h"
 #include "../genetics/Population.cuh"
+#include "../files/dataset.h"
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/transform_iterator.h>
