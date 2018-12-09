@@ -1,0 +1,22 @@
+{
+  "name": "inz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "watch.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saper150/genetic-optimization-cuda.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/saper150/genetic-optimization-cuda/issues"
+  },
+  "homepage": "https://github.com/saper150/genetic-optimization-cuda#readme",
+  "dependencies": {
+    "chokidar": "^2.0.4"
+  }
+}
