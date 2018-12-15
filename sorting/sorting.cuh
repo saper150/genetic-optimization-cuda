@@ -16,7 +16,7 @@ struct SortingElement {
   bool *dominates;
 };
 
-__global__ void reduceDominatedByCount(int *indeces,
+inline __global__ void reduceDominatedByCount(int *indeces,
                                        DeviceArray<bool> dominates,
                                        DeviceArray<int> dominatesCount,
                                        int size) {
@@ -53,9 +53,7 @@ __device__ __host__ bool isDominating(FloatArray<cryteriaCount> a,
   return true;
 }
 
-using GroupIterator = thrust::detail::normal_iterator<thrust::device_ptr<int>>;
-
-using DominanceGroups = thrust::host_vector<GroupIterator>;
+using DominanceGroups = thrust::host_vector<thrust::device_ptr<int>>;
 
 template <int cryteriaCount>
 __global__ void
@@ -85,19 +83,18 @@ template <int cryteriaCount> struct NonDominatedSorting {
       : dominates(popSize * popSize, false), popSize(popSize), indices(popSize),
         dominanceCounts(popSize, 0) {}
 
-  DominanceGroups sort(thrust::device_vector<FloatArray<cryteriaCount>> &fitnesses,
-            thrust::device_vector<int> &sorted) {
+  thrust::host_vector<thrust::device_ptr<int>> sort(thrust::device_vector<FloatArray<cryteriaCount>> &fitnesses) {
     InitializeSorting(fitnesses);
 
-    DominanceGroups groups;
+    thrust::host_vector<thrust::device_ptr<int>> groups;
 
-    groups.push_back(indices.begin());
+    groups.push_back(&indices.begin()[0]);
 
 
 
     while(true) {
       const auto &&res = thrust::partition(
-          groups.back(), indices.end(),
+          groups.back(), &indices.end()[0],
           [dominanceCounts = thrust::raw_pointer_cast(
                &dominanceCounts[0])] __device__(const int el) {
             return dominanceCounts[el] == 0;
@@ -125,9 +122,9 @@ template <int cryteriaCount> struct NonDominatedSorting {
         toDeviceArray(dominanceCounts));
   }
 
-  thrust::detail::normal_iterator<thrust::device_ptr<int>>
+  thrust::device_ptr<int>
   getLastGroup(const DominanceGroups &groups) {
-    return *(groups.begin() + (groups.size() - 2));
+    return *(groups.begin() + groups.size() - 2);
   }
 
   void reduceDominanceCount(const DominanceGroups &groups) {

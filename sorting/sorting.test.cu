@@ -4,11 +4,11 @@
 #include <thrust/device_vector.h>
 
 class GroupContains : public Catch::MatcherBase<int> {
-  DominanceGroups groups;
+  thrust::host_vector<thrust::device_ptr<int>> groups;
   int group;
 
 public:
-  GroupContains(DominanceGroups groups, int group)
+  GroupContains(thrust::host_vector<thrust::device_ptr<int>> groups, int group)
       : groups(groups), group(group) {}
 
   // Performs the test for this matcher
@@ -48,8 +48,7 @@ TEST_CASE("should sort sort fitness") {
   fitnesses[4] = {1, 1};
 
   NonDominatedSorting<cryteriaCount> s(5);
-  thrust::device_vector<int> sorted(5);
-  auto groups = s.sort(fitnesses, sorted);
+  thrust::host_vector<thrust::device_ptr<int>> groups = s.sort(fitnesses);
 
   REQUIRE(groups.size() == 5);
 
@@ -78,8 +77,7 @@ TEST_CASE("should sort sort fitness 2") {
   fitnesses[4] = {1, 1};
 
   NonDominatedSorting<cryteriaCount> s(5);
-  thrust::device_vector<int> sorted(5);
-  auto groups = s.sort(fitnesses, sorted);
+  auto groups = s.sort(fitnesses);
 
   REQUIRE(groups.size() == 3);
 

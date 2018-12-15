@@ -5,10 +5,14 @@ const spawn = require('child_process').spawn
 const compileAndRun = 
     () => spawn('make -j 4 && ./bin/a.out',{ stdio: 'inherit',shell:  true } )
 
+function clearConsole() {
+    console.log('\033c')
+}
+
 let process = compileAndRun()
 
-chokidar.watch(__dirname, { ignored: /^(node_modules)|(bin)/ }).on('change', (event, path) => {
+chokidar.watch(__dirname, { ignored: /^(node_modules)|(bin)|(.git)/ }).on('change', (event, path) => {
     process.kill()
-    console.log('\033c')
+    clearConsole()
     process = compileAndRun()
 })
