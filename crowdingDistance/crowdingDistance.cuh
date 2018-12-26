@@ -37,15 +37,22 @@ struct CrowdingDistance {
     int max;
     cudaMemcpy(&max, begin.get() + (end - begin - 1), sizeof(max),
                cudaMemcpyDeviceToHost);
-    
-    // cudaMemcpy(thrust::raw_pointer_cast(crowdDistances[min]), , sizeof(min), cudaMemcpyDeviceToHost);
-    thrust::fill_n(crowdDistances.begin() + min, 1, std::numeric_limits<float>::infinity());
-    thrust::fill_n(crowdDistances.begin() + max, 1, std::numeric_limits<float>::infinity());
+
+    // cudaMemcpy(thrust::raw_pointer_cast(crowdDistances[min]), , sizeof(min),
+    // cudaMemcpyDeviceToHost);
+    thrust::fill_n(crowdDistances.begin() + min, 1,
+                   std::numeric_limits<float>::infinity());
+    thrust::fill_n(crowdDistances.begin() + max, 1,
+                   std::numeric_limits<float>::infinity());
 
     // crowdDistances[min] = std::numeric_limits<float>::infinity();
     // crowdDistances[max] = std::numeric_limits<float>::infinity();
 
     const int size = end - begin - 2;
+    if(size <= 0) {
+      return;
+    }
+
     const auto foreachFunc =
         [fitnessesPointer = fitnessesPointer, sortedGroup = begin.get() + 1,
          cryterium = cryterium, size = size,

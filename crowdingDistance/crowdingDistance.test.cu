@@ -3,16 +3,16 @@
 #include "../sorting/sorting.cuh"
 #include "./crowdingDistance.cuh"
 
-void printGroups(thrust::host_vector<thrust::device_ptr<int>> groups) {
-  for (size_t i = 0; i < groups.size() - 1; i++) {
-    std::cout << "group " << i << '\n';
-    auto begin = *groups[i];
-    auto end = *groups[i + 1];
-    for (int j = 0; j < &end - &begin; j++) {
-      std::cout << (&begin)[j] << '\n';
-    }
-  }
-}
+// void printGroups(thrust::host_vector<thrust::device_ptr<int>> groups) {
+//   for (size_t i = 0; i < groups.size() - 1; i++) {
+//     std::cout << "group " << i << '\n';
+//     auto begin = *groups[i];
+//     auto end = *groups[i + 1];
+//     for (int j = 0; j < &end - &begin; j++) {
+//       std::cout << (&begin)[j] << '\n';
+//     }
+//   }
+// }
 
 TEST_CASE("Crowding Distances calculations") {
   constexpr int cryteriaCount = 2;
