@@ -5,9 +5,6 @@ include_directories(./)
 
 set(CMAKE_CUDA_FLAGS "--expt-extended-lambda")
 
-# FILE(GLOB SourcesCu *.cu)
-# FILE(GLOB SourcesCpp *.cpp)
-# ADD_EXECUTABLE(Optimization ${SourcesCpp} ${SourcesCu})
 
 add_executable(Optimization.out
     tests.cpp
