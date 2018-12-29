@@ -2,6 +2,7 @@
 #include <thrust/device_vector.h>
 
 inline void fillFronts(
+
     const thrust::host_vector<thrust::device_ptr<int>>& groups,
     thrust::device_vector<int>& fronts) {
   for (int i = 1; i < groups.size(); i++) {

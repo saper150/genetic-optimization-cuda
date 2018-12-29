@@ -1,5 +1,5 @@
 #include "../files/dataset.h"
-#include "./KnnFItness.cuh"
+#include "./KnnFitness.cuh"
 #include <thrust/device_vector.h>
 #include "./populationReduction.cuh"
 
