@@ -4,6 +4,7 @@
 #include "./crossover.cuh"
 
 TEST_CASE("crossover") {
+  // REQUIRE(0 == 1);
   Population<bool> src(2, 5);
   Population<bool> dest(2, 5);
   thrust::fill(dest.population.begin(), dest.population.end(), false);

@@ -4,11 +4,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/partition.h>
 #include <thrust/sequence.h>
-
-template <int count> struct FloatArray {
-  float data[count];
-  __device__ __host__ float operator[](const int index) { return data[index]; }
-};
+#include "../lib/FloatArray.cuh"
 
 struct SortingElement {
   int index;

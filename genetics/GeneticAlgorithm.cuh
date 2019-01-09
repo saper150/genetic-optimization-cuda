@@ -4,7 +4,7 @@
 #include <thrust/host_vector.h>
 
 #include "./Population.cuh"
-#include "./Selection.h"
+#include "./Selection.cuh"
 
 #include "./CrossOver.cuh"
 #include "./Mutation.cuh"

@@ -16,9 +16,6 @@ inline __global__ void crossoverKernel(const bool* src,
   const bool* p1 = src + (pairs[idx].get<0>() * genSize);
   const bool* p2 = src + (pairs[idx].get<1>() * genSize);
   bool* currentDestination = desc + (idx * genSize);
-  if(idx == 0) {
-    printf("rng:%i \tidy:%i \tp1:%i \tcopied:%i \n", rng[idx], idy, p1[idy], idy <= rng[idx] ? p1[idy] : p2[idy]);
-  }
   currentDestination[idy] = idy < rng[idx] ? p1[idy] : p2[idy];
 }
 

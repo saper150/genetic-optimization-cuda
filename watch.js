@@ -8,7 +8,7 @@ const ignored = new RegExp(
     )
 
 const compileAndRun = 
-    () => spawn('make -j 4 && ./bin/a.out',{ stdio: 'inherit',shell:  true } )
+    () => spawn('make -j 4 && ./Optimization.out',{ stdio: 'inherit',shell:  true } )
 
 function clearConsole() {
     console.log('\033c')

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "./Population.cuh"
 #include <builtin_types.h>
 #include <curand.h>
 #include <curand_kernel.h>

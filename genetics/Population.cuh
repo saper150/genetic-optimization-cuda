@@ -22,7 +22,7 @@ template <typename T> struct Population {
 };
 
 template <typename T>
-T *getSpecimen(const Population<T> &population, int index) {
+const T *getSpecimen(const Population<T> &population, int index) {
     return thrust::raw_pointer_cast(population.population.data()) +
            (population.genSize * index);
 }
