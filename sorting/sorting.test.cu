@@ -117,3 +117,25 @@ TEST_CASE("isDominated") {
     REQUIRE(isDominating(f, f2) == false);
   }
 }
+
+
+TEST_CASE("sortHalf") {
+  constexpr int cryteriaCount = 2;
+  thrust::device_vector<FloatArray<cryteriaCount>> fitnesses(5);
+  fitnesses[0] = {0, 2};
+  fitnesses[1] = {6, 16};
+  fitnesses[2] = {8, 11};
+  fitnesses[3] = {7, 12};
+  fitnesses[4] = {1, 1};
+
+  NonDominatedSorting<cryteriaCount> s(5);
+  auto groups = s.sortHalf(fitnesses);
+
+  REQUIRE(groups.size() == 2);
+
+  REQUIRE(groups[1] - groups[0] == 3); // size of first group
+
+  CHECK_THAT(1, GroupContains(groups, 0));
+  CHECK_THAT(2, GroupContains(groups, 0));
+  CHECK_THAT(3, GroupContains(groups, 0));
+}

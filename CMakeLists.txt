@@ -29,3 +29,5 @@ add_executable(Optimization.out
     ./sorting/sorting.test.cu
 
 )
+
+target_link_libraries (Optimization.out libcurand.so)

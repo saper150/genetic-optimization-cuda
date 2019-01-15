@@ -27,6 +27,7 @@ TEST_CASE("fillFronts should fill fronts") {
 
 }
 
+
 void printGroups(thrust::host_vector<thrust::device_ptr<int>> groups) {
   for (size_t i = 0; i < groups.size() - 1; i++) {
     std::cout << "group " << i << '\n';
@@ -51,12 +52,9 @@ TEST_CASE("selection") {
 
   NonDominatedSorting<cryteriaCount> s(6);
   thrust::host_vector<thrust::device_ptr<int>> groups = s.sort(fitnesses);
-  // thrust::device_vector<thrust::tuple<int,int>> pairs(5);
-  //cudaDeviceSynchronize();
-  // printGroups(groups);
-  // std::cout<< '\n';
 
   CrowdingDistance<cryteriaCount> crowding(6);
+
   crowding.calcDistances(groups, fitnesses);
 
   Selection ss(6);
@@ -72,9 +70,15 @@ TEST_CASE("selection") {
   fakeRng[6] = 4;
   fakeRng[7] = 3;
 
+  groups[0][0] = 0;
+  groups[0][1] = 1;
+  groups[0][2] = 2;
+  groups[0][3] = 3;
+  groups[0][4] = 4;
+  groups[0][5] = 4;
+
   ss.select(groups, crowding.crowdDistances, fakeRng);
   thrust::tuple<int, int> f1 = ss.pairs[0];
-  // std::cout<< f1.get<0>() << "\t" << f1.get<1>() << '\n';
   REQUIRE(f1 == thrust::make_tuple<int, int>(0, 1));
   thrust::tuple<int, int> f2 = ss.pairs[1];
   REQUIRE(f2 == thrust::make_tuple<int, int>(3, 3));

@@ -8,7 +8,7 @@ struct CrowdingDistance {
   FloatArray<cryteriaCount>* fitnessesPointer;
   CrowdingDistance(int popSize) : crowdDistances(popSize) {}
 
-  void calcDistances(
+  thrust::device_vector<float>& calcDistances(
       const thrust::host_vector<thrust::device_ptr<int>>& groups,
       thrust::device_vector<FloatArray<cryteriaCount>>& fitnesses) {
     thrust::fill(crowdDistances.begin(), crowdDistances.end(), 0.f);
@@ -20,6 +20,7 @@ struct CrowdingDistance {
         sortByCryterium(begin, end, j);
       }
     }
+    return crowdDistances;
   }
 
   void sortByCryterium(thrust::device_ptr<int> begin,
@@ -49,7 +50,7 @@ struct CrowdingDistance {
     // crowdDistances[max] = std::numeric_limits<float>::infinity();
 
     const int size = end - begin - 2;
-    if(size <= 0) {
+    if (size <= 0) {
       return;
     }
 
