@@ -57,7 +57,7 @@ TEST_CASE("selection") {
 
   crowding.calcDistances(groups, fitnesses);
 
-  Selection ss(6);
+  Selection<0> ss(6);
 
   thrust::device_vector<int> fakeRng(5* 4);
   fakeRng[0] = 0;
@@ -84,3 +84,54 @@ TEST_CASE("selection") {
   REQUIRE(f2 == thrust::make_tuple<int, int>(3, 3));
 
 }
+
+
+// TEST_CASE("selectionPop") {
+//   constexpr int cryteriaCount = 2;
+//   thrust::device_vector<PopFitness<cryteriaCount>> fitnesses(6);
+//   fitnesses[0] = { 0 ,nullptr,{15, 7}};
+//   fitnesses[1] = { 1 ,nullptr,{8, 15}};
+//   fitnesses[2] = { 2 ,nullptr,{11, 9}};
+//   fitnesses[3] = { 3 ,nullptr,{9, 13}};
+//   fitnesses[4] = { 4 ,nullptr,{2, 2}};
+//   fitnesses[5] = { 5 ,nullptr,{3, 1}};
+
+
+//   NonDominatedSorting<cryteriaCount> s(6);
+//   auto groups = s.sortHalfPop(fitnesses);
+
+//   CrowdingDistance<cryteriaCount> crowding(6);
+
+//   crowding.calcDistancesPop(groups);
+
+//   Selection<0> ss(6);
+
+//   thrust::device_vector<int> fakeRng(5* 4);
+//   fakeRng[0] = 0;
+//   fakeRng[1] = 4;
+//   fakeRng[2] = 1;
+//   fakeRng[3] = 3;
+
+//   fakeRng[4] = 5;
+//   fakeRng[5] = 3;
+//   fakeRng[6] = 4;
+//   fakeRng[7] = 3;
+
+//   ((PopFitness<cryteriaCount>)groups[0][0]).index = 0;
+
+  
+
+//   groups[0][1] = 1;
+//   groups[0][2] = 2;
+//   groups[0][3] = 3;
+//   groups[0][4] = 4;
+//   groups[0][5] = 4;
+
+//   ss.select(groups, crowding.crowdDistances, fakeRng);
+//   thrust::tuple<int, int> f1 = ss.pairs[0];
+//   REQUIRE(f1 == thrust::make_tuple<int, int>(0, 1));
+//   thrust::tuple<int, int> f2 = ss.pairs[1];
+//   REQUIRE(f2 == thrust::make_tuple<int, int>(3, 3));
+
+// }
+

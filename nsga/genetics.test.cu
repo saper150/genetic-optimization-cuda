@@ -3,6 +3,7 @@
 #include "../lib/FloatArray.cuh"
 #include "./genetics.cuh"
 
+#include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 
 // template<typename T>
@@ -20,25 +21,36 @@
 //                                     thrust::plus<float>());
 
 struct TestFitness {
-  thrust::device_vector<FloatArray<2>> operator()(
-      Population<bool>& p,
-      thrust::device_ptr<FloatArray<2>> dest) {
-    // DevicePopulation<bool> devicePop = p.toDevicePopulation();
+  void operator()(Population<bool>& p, thrust::device_ptr<FloatArray<2>> dest) {
 
-    thrust::device_vector<FloatArray<2>> result(p.popSize());
+    thrust::host_vector<bool> hostPop = p.population;
+    thrust::host_vector<FloatArray<2>> res(p.popSize());
+    thrust::device_vector<FloatArray<2>> f(p.popSize());
 
     for (int i = 0; i < p.popSize(); i++) {
       FloatArray<2> f;
       f.data[0] = 0;
       f.data[1] = 0;
       for (int j = 0; j < p.genSize; j++) {
-        f.data[0] += p.population[i * p.genSize + j];
+        if (j % 2 == 0 && hostPop[i * p.genSize + j]) {
+          f.data[0] += 1;
+          f.data[1] += 1;
+        }
+
+        if (j % 2 != 0 && !hostPop[i * p.genSize + j]) {
+          f.data[0] += 1;
+          f.data[1] += 1;
+        }
+
+        // f.data[0] += p.population[i * p.genSize + j];
       }
-      *(dest + i) = f;
+      res[i] = f;
+      dest[i] = f;
       // result[i] = f;
     }
-
-    return result;
+    // cudaMemcpy(dest.get(), thrust::raw_pointer_cast(res.data()),
+    //            res.size() * sizeof(FloatArray<2>), cudaMemcpyHostToDevice);
+    // thrust::copy(res.begin(), res.end(), dest);
   }
 };
 
@@ -53,18 +65,15 @@ TEST_CASE("genetics") {
   Genetics<TestFitness, 2> ggg(popSize, genSize, TestFitness());
 
   REQUIRE(true == false);
-}
-
+};
 
 TEST_CASE("sortLastGroup") {
-
   thrust::device_vector<int> groupsVector(5);
   groupsVector[0] = 0;
   groupsVector[1] = 1;
   groupsVector[2] = 2;
   groupsVector[3] = 3;
   groupsVector[4] = 4;
-
 
   thrust::host_vector<thrust::device_ptr<int>> groups(3);
   groups[0] = thrust::device_pointer_cast(groupsVector.data());
@@ -78,12 +87,9 @@ TEST_CASE("sortLastGroup") {
 
   sortLastGroup(groups, distances);
 
-
   REQUIRE(groupsVector[0] == 0);
   REQUIRE(groupsVector[1] == 1);
   REQUIRE(groupsVector[2] == 3);
   REQUIRE(groupsVector[3] == 4);
   REQUIRE(groupsVector[4] == 2);
-
 }
-

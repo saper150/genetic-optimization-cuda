@@ -1,4 +1,5 @@
 #pragma once
+#include <curand.h>
 
 template <typename T> struct Mutation {
     float mutationRate;

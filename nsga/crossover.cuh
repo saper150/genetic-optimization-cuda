@@ -18,13 +18,31 @@ inline __global__ void crossoverKernel(const bool* src1,
   const bool* p1 = pairs[idx].get<0>() >= popSize
                        ? src2 + ((pairs[idx].get<0>() - popSize) * genSize)
                        : src1 + (pairs[idx].get<0>() * genSize);
-  
+
   const bool* p2 = pairs[idx].get<1>() >= popSize
                        ? src2 + ((pairs[idx].get<1>() - popSize) * genSize)
                        : src1 + (pairs[idx].get<1>() * genSize);
 
   bool* currentDestination = desc + (idx * genSize);
   currentDestination[idy] = idy < rng[idx] ? p1[idy] : p2[idy];
+}
+
+inline __global__ void crossoverKernelPop(
+    bool* desc,
+    const int* rng,
+    const thrust::tuple<bool*, bool*>* pairs,
+    const int popSize,
+    const int genSize) {
+  const int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  const int idy = threadIdx.y + blockDim.y * blockIdx.y;
+
+  if (idx >= popSize || idy >= genSize) {
+    return;
+  }
+
+  bool* currentDestination = desc + (idx * genSize);
+  currentDestination[idy] =
+      idy < rng[idx] ? pairs[idx].get<0>()[idy] : pairs[idx].get<1>()[idy];
 }
 
 template <typename T>
@@ -43,5 +61,17 @@ struct Crossover {
         thrust::raw_pointer_cast(dest.population.data()),
         thrust::raw_pointer_cast(rng.data()),
         thrust::raw_pointer_cast(pairs.data()), src1.popSize(), src1.genSize);
+  }
+
+  void crossPop(Population<T>& dest,
+                const thrust::device_vector<thrust::tuple<bool*, bool*>>& pairs,
+                const thrust::device_vector<int>& rng) {
+    const dim3 threadsPerBlock = {32, 32, 1};
+    const dim3 blocks = {(dest.popSize() / threadsPerBlock.x) + 1,
+                         (dest.popSize() / threadsPerBlock.y) + 1, 1};
+    crossoverKernelPop<<<blocks, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(dest.population.data()),
+        thrust::raw_pointer_cast(rng.data()),
+        thrust::raw_pointer_cast(pairs.data()), dest.popSize(), dest.genSize);
   }
 };
