@@ -52,3 +52,21 @@ TEST_CASE("knnAlphaFitness should set fitness to 0 if number of speciments is lo
     knn(p, fitness);
     REQUIRE(fitness[0] == 0.f);
 }
+
+
+TEST_CASE("knnFitnessNSGA should return accuracy and inverse sum") {
+
+    constexpr int popSize = 1;
+    DataSetLoader<4> loader("./Knn/testData1.csv");
+    KnnFitnessNSGA<4, 2, 3> knn(popSize, loader.dataSet);
+    Population<bool> p(popSize, static_cast<int>(loader.dataSet.size()));
+    p.population[5] = false;
+    p.population[4] = false;
+    p.population[3] = false;
+    p.population[2] = false;
+    thrust::device_vector<FloatArray<2>> fitness(1);
+    knn(p, fitness);
+    thrust::host_vector<FloatArray<2>> hostFitness = fitness;
+    REQUIRE(hostFitness[0].data[0] == 3.f);
+    REQUIRE(hostFitness[0].data[1] == -2.f);
+}

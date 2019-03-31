@@ -35,13 +35,15 @@ class GroupContains : public Catch::MatcherBase<int> {
   }
 };
 
-template<int cryteriaCount>
+template <int cryteriaCount>
 class GroupContainsPop : public Catch::MatcherBase<int> {
   thrust::host_vector<thrust::device_ptr<PopFitness<cryteriaCount>>> groups;
   int group;
 
  public:
-  GroupContainsPop(thrust::host_vector<thrust::device_ptr<PopFitness<cryteriaCount>>> groups, int group)
+  GroupContainsPop(
+      thrust::host_vector<thrust::device_ptr<PopFitness<cryteriaCount>>> groups,
+      int group)
       : groups(groups), group(group) {}
 
   // Performs the test for this matcher
@@ -67,7 +69,6 @@ class GroupContainsPop : public Catch::MatcherBase<int> {
     return ss.str();
   }
 };
-
 
 // The builder function
 // inline GroupContains IsBetween(int begin, int end) { return IntRange(begin,
@@ -178,7 +179,7 @@ TEST_CASE("sortHalfPop") {
   constexpr int cryteriaCount = 2;
   thrust::device_vector<PopFitness<cryteriaCount>> fitnesses(5);
   fitnesses[0] = {0, nullptr, {0, 2}};
-  fitnesses[1] = {1, nullptr, {6, 16}};
+  fitnesses[1] = {1, nullptr, {100, 100}};
   fitnesses[2] = {2, nullptr, {8, 11}};
   fitnesses[3] = {3, nullptr, {7, 12}};
   fitnesses[4] = {4, nullptr, {1, 1}};
@@ -186,32 +187,33 @@ TEST_CASE("sortHalfPop") {
   NonDominatedSorting<cryteriaCount> s(5);
   auto groups = s.sortHalfPop(fitnesses);
 
-  REQUIRE(groups.size() == 2);
+  // REQUIRE(groups.size() == 3);
 
-  REQUIRE(groups[1] - groups[0] == 3); // size of first group
+  REQUIRE(groups[1] - groups[0] == 1);  // size of first group
+  REQUIRE(groups[2] - groups[1] == 2);  // size of second group
 
   CHECK_THAT(1, GroupContainsPop<cryteriaCount>(groups, 0));
-  CHECK_THAT(2, GroupContainsPop<cryteriaCount>(groups, 0));
-  CHECK_THAT(3, GroupContainsPop<cryteriaCount>(groups, 0));
+  CHECK_THAT(2, GroupContainsPop<cryteriaCount>(groups, 1));
+  CHECK_THAT(3, GroupContainsPop<cryteriaCount>(groups, 1));
 }
 
-TEST_CASE("sortHalfPop single group") {
+TEST_CASE("sortHalfPop 2") {
   constexpr int cryteriaCount = 2;
   thrust::device_vector<PopFitness<cryteriaCount>> fitnesses(5);
-  fitnesses[0] = {0, nullptr, {0, 2}};
-  fitnesses[1] = {1, nullptr, {6, 16}};
-  fitnesses[2] = {2, nullptr, {8, 11}};
-  fitnesses[3] = {3, nullptr, {7, 12}};
-  fitnesses[4] = {4, nullptr, {1, 1}};
+  fitnesses[0] = {0, nullptr, {0, 0}};
+  fitnesses[1] = {1, nullptr, {0, 0}};
+  fitnesses[2] = {2, nullptr, {2, 2}};
+  fitnesses[3] = {3, nullptr, {3, 3}};
+  fitnesses[4] = {4, nullptr, {4, 4}};
 
   NonDominatedSorting<cryteriaCount> s(5);
   auto groups = s.sortHalfPop(fitnesses);
 
-  REQUIRE(groups.size() == 2);
+  REQUIRE(groups.size() == 5);
 
-  REQUIRE(groups[1] - groups[0] == 3); // size of first group
+  // REQUIRE(groups[1] - groups[0] == 3);  // size of first group
 
-  CHECK_THAT(1, GroupContainsPop<cryteriaCount>(groups, 0));
-  CHECK_THAT(2, GroupContainsPop<cryteriaCount>(groups, 0));
-  CHECK_THAT(3, GroupContainsPop<cryteriaCount>(groups, 0));
+  // CHECK_THAT(1, GroupContainsPop<cryteriaCount>(groups, 0));
+  // CHECK_THAT(2, GroupContainsPop<cryteriaCount>(groups, 0));
+  // CHECK_THAT(3, GroupContainsPop<cryteriaCount>(groups, 0));
 }

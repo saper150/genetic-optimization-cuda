@@ -2,7 +2,7 @@
 #include <iostream>
 #include <thrust/host_vector.h>
 
-#include "./genetics/GeneticAlgorithm.cuh"
+// #include "./genetics/GeneticAlgorithm.cuh"
 
 #include "./genetics/Population.cuh"
 
@@ -11,27 +11,23 @@
 
 #include "./fitness/BasicFitness.cuh"
 #include "./fitness/KnnFitness.cuh"
+#include "./nsga/genetics.cuh"
+
+#include "./files/dataset.h"
 
 int main() {
 
+    constexpr int popSize = 100;
+
+    DataSetLoader<4> loader("./processDataset/data/iris/iris-train.csv");
+    constexpr int attributeCount = 4;
+    constexpr int labelsCount = 3;
+    constexpr int k = 3;
+    KnnFitnessNSGA<attributeCount, labelsCount, k> knn(popSize, loader.dataSet);
+
+    Genetics<decltype(knn), 2> ggg(popSize, loader.dataSet.size(), &knn);
+
     try {
-
-        // KnnFitnessTest();
-        // std::cout << "start" << std::endl;
-        // DataSetLoader<4>
-        // loader("./processDataset/data/iris/iris-verify.csv");
-
-        // KnnFitness<4> knnFitness(loader.dataSet);
-
-        // BasicFitness<bool> basicFitness(100);
-
-        // Performance::mesure("all", [&]() {
-        //     GeneticAlgorithm<bool, KnnFitness<4>> gen(200, knnFitness);
-
-        //     for (int i = 0; i < 1000; i++) {
-        //         gen.iterate();
-        //     }
-        // });
         cudaDeviceSynchronize();
         Performance::print();
     } catch (const std::runtime_error &re) {
@@ -45,3 +41,4 @@ int main() {
                   << std::endl;
     }
 }
+

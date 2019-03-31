@@ -3,12 +3,12 @@ const spawn = require('child_process').spawn
 const fs = require('fs')
 
 const ignored = new RegExp(
-        ['.git'].concat(fs.readFileSync('.gitignore',{ encoding: 'utf8' }).split(/\r?\n/))
+        ['.git', '/results'].concat(fs.readFileSync('.gitignore',{ encoding: 'utf8' }).split(/\r?\n/))
                 .map(x=>`(${x})`).join('|')
     )
 
 const compileAndRun = 
-    () => spawn('make -j 4 && ./Optimization.out',{ stdio: 'inherit',shell:  true } )
+    () => spawn('make -j 4 && ./Optimization.out [integration]',{ stdio: 'inherit',shell:  true } )
 
 function clearConsole() {
     console.log('\033c')

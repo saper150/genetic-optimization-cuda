@@ -136,7 +136,7 @@ public static class DataSetHelper {
         }
     }
 
-    public static void Rescale<T>(CudaDataSet<T> data) {
+    public static void Normalize<T>(CudaDataSet<T> data) {
         for (int col = 0; col < data.Vectors.GetLength(1); col++) {
             var (min, max) = ColumnExtrema(data, col);
             for (int row = 0; row < data.Vectors.GetLength(0); row++) {

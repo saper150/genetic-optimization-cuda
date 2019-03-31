@@ -8,7 +8,7 @@ class Reader {
     public CudaDataSet<int> dataSet;
 
     public Dictionary<string, int> labelToId = new Dictionary<string, int>();
-
+    public int attributeCount = 0;
     public Reader(string filePath) {
 
         var variables = new List<float[]>();
@@ -18,6 +18,7 @@ class Reader {
         csv.Configuration.DetectColumnCountChanges = true;
         csv.Read();
         int variablesCount = csv.Context.ColumnCount;
+        attributeCount = csv.Context.ColumnCount - 1;
         while (csv.Read()) {
             variables.Add(new float[csv.Context.ColumnCount - 1]);
             for (int i = 0; i < csv.Context.ColumnCount - 1; i++) {

@@ -7,8 +7,28 @@
 #include "./selection.cuh"
 
 #include <thrust/device_ptr.h>
+#include <fstream>
 #include "../crowdingDistance/crowdingDistance.cuh"
 #include "./PopFitness.cuh"
+
+template <int c>
+void printGroupss(
+    thrust::host_vector<thrust::device_ptr<PopFitness<c>>> groups) {
+  std::cout << "size" << groups.size() << " " << groups[0] - groups[1] << '\n';
+
+  for (size_t i = 0; i < groups.size() - 1; i++) {
+    thrust::device_ptr<PopFitness<c>>& begin = groups[i];
+    thrust::device_ptr<PopFitness<c>>& end = groups[i + 1];
+    const int groupSize = end - begin;
+    std::cout << "group " << i << ", group size:" << groupSize << '\n';
+    for (int j = 0; j < groupSize; j++) {
+      PopFitness<c> cc = *(begin + j);
+      std::cout << "(" << cc.fitness.data[0] << ", " << cc.fitness.data[1]
+                << ", " << cc.fitness.data[1] + cc.fitness.data[0] << ")"
+                << '\n';
+    }
+  }
+}
 
 inline void sortLastGroup(thrust::host_vector<thrust::device_ptr<int>>& groups,
                           const thrust::device_vector<float>& distances) {
@@ -22,9 +42,6 @@ template <int cryteriaCount>
 void sortLastGroupPop(
     thrust::host_vector<thrust::device_ptr<PopFitness<cryteriaCount>>>& groups,
     const thrust::device_vector<float>& distances) {
-      // std::cout << (*groups[groups.size() - 2]).index << std::endl;
-      std::cout << groups.size() << std::endl;
-      std::cout << groups.back() - groups[groups.size() - 2] << std::endl;
   thrust::sort(
       groups[groups.size() - 2], groups.back(),
       [distances = thrust::raw_pointer_cast(distances.data())] __device__(
@@ -51,7 +68,6 @@ template <typename FitnessType, int cryteriaCount>
 struct Genetics {
   Population<bool> p1;
   Population<bool> p2;
-  Population<bool> p3;
   NonDominatedSorting<cryteriaCount> sorting;
   CrowdingDistance<cryteriaCount> crowdingDistance;
   Selection<cryteriaCount> selection;
@@ -59,157 +75,45 @@ struct Genetics {
   IntRng crossoverRng;
   int popSize;
   int genSize;
+  Mutation<bool> mutation;
   thrust::device_vector<FloatArray<cryteriaCount>> fitness;
-
-  thrust::device_ptr<FloatArray<cryteriaCount>> p1Fitness;
-  thrust::device_ptr<FloatArray<cryteriaCount>> p2Fitness;
-
-  Genetics(int popSize, int genSize, FitnessType fitnesFunc)
+  thrust::host_vector<thrust::device_ptr<PopFitness<cryteriaCount>>> groups;
+  thrust::device_vector<PopFitness<cryteriaCount>> fitnessPop;
+  Genetics(int popSize, int genSize, FitnessType* fitnesFunc)
       : p1(popSize, genSize),
         p2(popSize, genSize),
-        p3(popSize, genSize),
-        sorting(popSize * 2),
-        crowdingDistance(popSize * 2),
+        sorting(popSize),
+        crowdingDistance(popSize),
         selection(popSize),
         selectionRng(popSize * 4, popSize),
         crossoverRng(popSize, genSize),
-        fitness(popSize * 2),
+        fitness(popSize),
         popSize(popSize),
-        genSize(genSize) {
-    p1Fitness = thrust::device_pointer_cast(fitness.data());
-    p2Fitness =
-        thrust::device_pointer_cast(fitness.data() + fitness.size() / 2);
-
-    Mutation<bool> mutation(popSize, genSize);
-    mutation.rate = 0.02f;
+        genSize(genSize),
+        mutation(popSize, genSize),
+        fitnessPop(popSize) {
+    mutation.rate = 0.01f;
     randomize(p1.population);
-    randomize(p2.population);
 
-    fitnesFunc(p1, p1Fitness);
-    fitnesFunc(p2, p2Fitness);
+    for (int i = 0; i < 150; i++) {
+      std::cout << i << std::endl;
+      (*fitnesFunc)(p1, fitness);
+      copyPopFitness(thrust::raw_pointer_cast(fitnessPop.data()),
+                     fitness.data().get(), p1);
 
-    thrust::device_vector<PopFitness<cryteriaCount>> fitnessPop(fitness.size());
-    copyPopFitness(thrust::raw_pointer_cast(fitnessPop.data()), p1Fitness.get(),
-                   p1);
-    copyPopFitness(thrust::raw_pointer_cast(fitnessPop.data() + popSize),
-                   p2Fitness.get(), p2);
+      groups = sorting.sortHalfPop(fitnessPop);
+      auto& distances = crowdingDistance.calcDistancesPop(groups);
 
-    thrust::host_vector<thrust::device_ptr<PopFitness<cryteriaCount>>> groups =
-        sorting.sortHalfPop(fitnessPop);
-    cudaDeviceSynchronize();
-    auto distances = crowdingDistance.calcDistancesPop(groups);
-    cudaDeviceSynchronize();
-    sortLastGroupPop<cryteriaCount>(groups, distances);
+      auto& generatedRng = selectionRng.generate();
+      selection.selectPop(groups, distances, generatedRng);
 
-    Population<bool> parentPop(popSize, genSize);
-
-    // const dim3 threadsPerBlock = {32, 32, 1};
-    // const dim3 blocks = {(parentPop.popSize() / threadsPerBlock.x) + 1,
-    //                      (parentPop.popSize() / threadsPerBlock.y) + 1, 1};
-    // copyPopulation<cryteriaCount><<<blocks, threadsPerBlock>>>(
-    //     thrust::raw_pointer_cast(fitnessPop.data()),
-    //     parentPop.toDevicePopulation());
-
-    copySpeciments(fitnessPop, parentPop);
-
-    auto generatedRng = selectionRng.generate();
-    cudaDeviceSynchronize();
-    selection.selectPop(groups, distances, generatedRng);
-    cudaDeviceSynchronize();
-    Crossover<bool>().crossPop(p3, selection.pairsPop, crossoverRng.generate());
-    cudaDeviceSynchronize();
-    // printPopulation(p3, std::cout);
-    std::cout << std::endl;
-
-    // for (int i = 0; i < 0; i++) {
-    // //   fitnesFunc(p3, p2Fitness);
-
-    //   copyPopFitness(thrust::raw_pointer_cast(fitnessPop.data() + popSize),
-    //                  p2Fitness.get(), p3);
-
-    //   groups = sorting.sortHalfPop(fitnessPop);
-    //   distances = crowdingDistance.calcDistancesPop(groups);
-    //   sortLastGroupPop<cryteriaCount>(groups, distances);
-
-    //   {
-    //     const dim3 threadsPerBlock = {32, 32, 1};
-    //     const dim3 blocks = {(parentPop.popSize() / threadsPerBlock.x) + 1,
-    //                          (parentPop.popSize() / threadsPerBlock.y) + 1, 1};
-    //     copyPopulation<cryteriaCount><<<blocks, threadsPerBlock>>>(
-    //         thrust::raw_pointer_cast(fitnessPop.data()),
-    //         parentPop.toDevicePopulation());
-
-    //     copySpeciments(fitnessPop, parentPop);
-    //   }
-
-    //   generatedRng = selectionRng.generate();
-
-    //   selection.selectPop(groups, distances, generatedRng);
-    //   Crossover<bool>().crossPop(p1, selection.pairsPop,
-    //                              crossoverRng.generate());
-    //   mutation.mutate(p1);
-    //   std::swap(p1, p3);
-    // }
-
-    // printPopulation(p1, std::cout);
-
-    // fitnesFunc(p3, p2Fitness);
-    // copyPopFitness(thrust::raw_pointer_cast(fitnessPop.data() + popSize),
-    //                p2Fitness.get(), p3);
-    // groups = sorting.sortHalfPop(fitnessPop);
-    // distances = crowdingDistance.calcDistancesPop(groups);
-    // sortLastGroupPop<cryteriaCount>(groups, distances);
-    // generatedRng = selectionRng.generate();
-
-    // thrust::copy_n(groups.front(), popSize, hostFitness.begin());
-
-    // for (int i = 0; i < popSize; i++) {
-    //   thrust::copy_n(hostFitness[i].specimen, genSize,
-    //                  p2.population.begin() + genSize * i);
-    //   hostFitness[i].specimen = getSpecimen(p3, i);
-    //   groups.front()[i] = hostFitness[i];
-    // }
-
-    // selection.selectPop(groups, distances, generatedRng);
-    // Crossover<bool>().crossPop(p3, selection.pairsPop,
-    // crossoverRng.generate());
-
-    // Crossover<bool>().cross(p1, p2, p3, selection.pairs,
-    //                         crossoverRng.generate());
-
-    // fitnesFunc(p3, p1Fitness);
-
-    // fitnesFunc(p3, p1Fitness)
-  }
-
-  // void copy(thrust::host_vector<thrust::device_ptr<int>> groups) {
-  //   thrust::for_each_n(thrust::counting_iterator<int>(0), popSize,
-  //                      [g = groups[0].get(), p1 = p1.toDevicePopulation(),
-  //                       p2 = p2.toDevicePopulation(),
-  //                       o = p3.toDevicePopulation(),
-  //                       popSize = popSize
-  //                       ] __device__(int i) {
-
-  //                       DevicePopulation<bool> parent = g[i] >= popSize ? p2
-  //                       : p1;
-
-  //                        thrust::copy(getSpecimen(parent, g[i]),
-  //                                     getSpecimen(parent, g[i]) + p1.genSize,
-  //                                     getSpecimen(o, i));
-  //                        if (i == 0) {
-  //                          cudaDeviceSynchronize();
-  //                        }
-  //                      });
-  // }
-
-  void copySpeciments(
-      thrust::device_vector<PopFitness<cryteriaCount>>& fitnessPop,
-      Population<bool>& p) {
-    thrust::for_each_n(thrust::make_counting_iterator<int>(0), popSize,
-                       [g = thrust::raw_pointer_cast(fitnessPop.data()),
-                        pop = p.toDevicePopulation()] __device__(int i) {
-                         g[i].specimen = getSpecimen(pop, i);
-                       });
+      Crossover<bool>().crossPop(p2, selection.pairsPop,
+                                 crossoverRng.generate());
+      mutation.mutate(p2);
+      std::swap(p1, p2);
+    }
+    printGroupss(groups);
+    // printPopulation(p1);
   }
 
   void copyPopFitness(PopFitness<cryteriaCount>* dest,
@@ -222,5 +126,20 @@ struct Genetics {
                        });
   }
 
-  void iterate() {}
+  void exportResult(std::string file) {
+    std::ofstream myfile;
+    myfile.open(file);
+    myfile.clear();
+    thrust::host_vector<FloatArray<cryteriaCount>> h = fitness;
+    for (FloatArray<cryteriaCount> point : h) {
+      for (int i = 0; i < cryteriaCount; i++) {
+        myfile << point[i];
+        if (i < cryteriaCount - 1) {
+          myfile << ',';
+        }
+      }
+      myfile << '\n';
+    }
+    myfile.close();
+  }
 };

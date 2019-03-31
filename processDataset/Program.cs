@@ -16,15 +16,21 @@ class Program {
     static void CreateDataSets(string inputDataFile) {
         var reader = new Reader(inputDataFile);
         // DataSetHelper.Rescale(reader.dataSet);
+
         DataSetHelper.Normalize(reader.dataSet);
 
-        // DataSetHelper.Shuffle(reader.dataSet);
-        var splited = DataSetHelper.Split(reader.dataSet, new float[] { 0.5f, 0.3f, 0.2f });
+        DataSetHelper.Shuffle(reader.dataSet);
+        var splited = DataSetHelper.Split(reader.dataSet, new float[] { 0.8f, 0.2f});
 
         DataSetHelper.SaveInto(splited[0], BuildPath(inputDataFile, "train"));
         DataSetHelper.SaveInto(splited[1], BuildPath(inputDataFile, "test"));
-        DataSetHelper.SaveInto(splited[2], BuildPath(inputDataFile, "verify"));
 
+
+        // DataSetHelper.SaveInto(splited[2], BuildPath(inputDataFile, "verify"));
+        Console.Write("attributes count: ");
+        Console.WriteLine(reader.attributeCount);
+        Console.Write("labels count: ");
+        Console.WriteLine(reader.labelToId.Count());
     }
 
     static void Main(string[] args) {

@@ -3,6 +3,10 @@
 #include "../lib/FloatArray.cuh"
 #include "./genetics.cuh"
 
+#include "../Knn/Knn.cuh"
+#include "../files/dataset.h"
+#include "../fitness/populationReduction.cuh"
+
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 
@@ -21,12 +25,10 @@
 //                                     thrust::plus<float>());
 
 struct TestFitness {
-  void operator()(Population<bool>& p, thrust::device_ptr<FloatArray<2>> dest) {
-
+  void operator()(Population<bool>& p,
+                  thrust::device_vector<FloatArray<2>>& dest) {
     thrust::host_vector<bool> hostPop = p.population;
-    thrust::host_vector<FloatArray<2>> res(p.popSize());
     thrust::device_vector<FloatArray<2>> f(p.popSize());
-
     for (int i = 0; i < p.popSize(); i++) {
       FloatArray<2> f;
       f.data[0] = 0;
@@ -34,35 +36,42 @@ struct TestFitness {
       for (int j = 0; j < p.genSize; j++) {
         if (j % 2 == 0 && hostPop[i * p.genSize + j]) {
           f.data[0] += 1;
-          f.data[1] += 1;
         }
 
         if (j % 2 != 0 && !hostPop[i * p.genSize + j]) {
           f.data[0] += 1;
-          f.data[1] += 1;
         }
 
-        // f.data[0] += p.population[i * p.genSize + j];
+        f.data[1] += hostPop[i * p.genSize + j] ? 1 : 0;
       }
-      res[i] = f;
       dest[i] = f;
-      // result[i] = f;
     }
-    // cudaMemcpy(dest.get(), thrust::raw_pointer_cast(res.data()),
-    //            res.size() * sizeof(FloatArray<2>), cudaMemcpyHostToDevice);
-    // thrust::copy(res.begin(), res.end(), dest);
   }
 };
 
 TEST_CASE("genetics") {
-  constexpr int popSize = 10;
-  constexpr int genSize = 4;
-  // thrust::tuple<>
-  std::function<FloatArray<2>(Population<bool> & p)> f = [](auto& p) {
-    return FloatArray<2>();
-  };
+  constexpr int popSize = 100;
+  constexpr int genSize = 20;
 
-  Genetics<TestFitness, 2> ggg(popSize, genSize, TestFitness());
+  auto f = TestFitness();
+  Genetics<TestFitness, 2> ggg(popSize, genSize, &f);
+
+  REQUIRE(true == false);
+};
+
+TEST_CASE("genetics knn") {
+  DataSetLoader<4> loader("./Knn/testData1.csv");
+  Knn<4, 2, 3> knn(loader.dataSet);
+  thrust::device_vector<bool> testPop(loader.dataSet.size(), true);
+  Population<bool> p(1, static_cast<int>(loader.dataSet.size()));
+  thrust::device_vector<float> accuracy(1);
+  knn.accuracy(p, accuracy);
+
+  constexpr int popSize = 100;
+  constexpr int genSize = 20;
+
+  auto f = TestFitness();
+  Genetics<TestFitness, 2> ggg(popSize, genSize, &f);
 
   REQUIRE(true == false);
 };

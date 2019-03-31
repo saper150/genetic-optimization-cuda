@@ -36,7 +36,7 @@ __device__ T* getSpecimen(const DevicePopulation<T>& population, int index) {
 }
 
 template <typename T>
-void printPopulation(Population<T>& p, std::ostream& stream) {
+void printPopulation(Population<T>& p, std::ostream& stream = std::cout) {
   thrust::host_vector<T> hostPopulation = p.population;
 
   for (int i = 0; i < p.popSize(); i++) {
@@ -45,4 +45,5 @@ void printPopulation(Population<T>& p, std::ostream& stream) {
     }
     stream << '\n';
   }
+  stream << '\n';
 }
