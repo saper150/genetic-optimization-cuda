@@ -196,7 +196,7 @@ template <int atributeCount, int labelsCount, int k> class Knn {
 
         if (labels.size() == 0) {
             const dim3 blocks = {(population.popSize() / threadsPerBlock.x) + 1,
-                                 (population.popSize() / threadsPerBlock.y) + 1,
+                                 (population.genSize / threadsPerBlock.y) + 1,
                                  1};
 
             sameAccuracyKernel<atributeCount, labelsCount, k>

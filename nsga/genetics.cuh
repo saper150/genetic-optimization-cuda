@@ -10,6 +10,7 @@
 #include <fstream>
 #include "../crowdingDistance/crowdingDistance.cuh"
 #include "./PopFitness.cuh"
+#include "../Performance/Performance.h"
 
 template <int c>
 void printGroupss(
@@ -79,6 +80,7 @@ struct Genetics {
   thrust::device_vector<FloatArray<cryteriaCount>> fitness;
   thrust::host_vector<thrust::device_ptr<PopFitness<cryteriaCount>>> groups;
   thrust::device_vector<PopFitness<cryteriaCount>> fitnessPop;
+  FitnessType* fitnesFunc;
   Genetics(int popSize, int genSize, FitnessType* fitnesFunc)
       : p1(popSize, genSize),
         p2(popSize, genSize),
@@ -91,29 +93,56 @@ struct Genetics {
         popSize(popSize),
         genSize(genSize),
         mutation(popSize, genSize),
-        fitnessPop(popSize) {
+        fitnessPop(popSize),
+        fitnesFunc(fitnesFunc) {
     mutation.rate = 0.01f;
     randomize(p1.population);
+  }
 
-    for (int i = 0; i < 150; i++) {
-      std::cout << i << std::endl;
-      (*fitnesFunc)(p1, fitness);
-      copyPopFitness(thrust::raw_pointer_cast(fitnessPop.data()),
-                     fitness.data().get(), p1);
+  void run(int iterations) {
+    for (int i = 0; i < iterations; i++) {
+      Performance::mesure("fitness", [&]() {
+        (*fitnesFunc)(p1, fitness);
+      });
+      Performance::mesure("copy fitness", [&]() {
+        copyPopFitness(thrust::raw_pointer_cast(fitnessPop.data()),
+                      fitness.data().get(), p1);
+      });
 
-      groups = sorting.sortHalfPop(fitnessPop);
-      auto& distances = crowdingDistance.calcDistancesPop(groups);
+      Performance::mesure("groups", [&]() {
+        groups = sorting.sortHalfPop(fitnessPop);
+      });
 
-      auto& generatedRng = selectionRng.generate();
-      selection.selectPop(groups, distances, generatedRng);
+      Performance::mesure("distances", [&]() {
+        groups = sorting.sortHalfPop(fitnessPop);
+      });
 
-      Crossover<bool>().crossPop(p2, selection.pairsPop,
-                                 crossoverRng.generate());
-      mutation.mutate(p2);
-      std::swap(p1, p2);
+      Performance::mesure("distance", [&]() {
+        crowdingDistance.calcDistancesPop(groups);
+      });
+
+
+
+      Performance::mesure("selection", [&]() {
+        auto& generatedRng = selectionRng.generate();
+        selection.selectPop(groups, crowdingDistance.crowdDistances, generatedRng);
+      });
+
+      Performance::mesure("crosover", [&]() {
+        Crossover<bool>().crossPop(p2, selection.pairsPop,
+                                  crossoverRng.generate());
+      });
+
+      Performance::mesure("mutate", [&]() {
+        mutation.mutate(p2);
+      });
+
+      Performance::mesure("swap", [&]() {
+        std::swap(p1, p2);
+      });
+
     }
-    printGroupss(groups);
-    // printPopulation(p1);
+    // printGroupss(groups);
   }
 
   void copyPopFitness(PopFitness<cryteriaCount>* dest,

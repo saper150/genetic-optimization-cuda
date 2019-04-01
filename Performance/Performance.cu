@@ -22,13 +22,14 @@ using std::chrono::high_resolution_clock;
 using std::chrono::microseconds;
 
 void Performance::mesure(std::string key, std::function<void()> function) {
-    const high_resolution_clock::time_point t1 = high_resolution_clock::now();
+    // const high_resolution_clock::time_point t1 = high_resolution_clock::now();
     function();
-    const high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    const auto dur = t2 - t1;
-    const auto m = duration_cast<microseconds>(dur);
+    // cudaDeviceSynchronize();
+    // const high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    // const auto dur = t2 - t1;
+    // const auto m = duration_cast<microseconds>(dur);
 
-    mesurements[key].push_back(m.count() / 1000);
+    // mesurements[key].push_back(m.count() / 1000);
 }
 
 void Performance::print() {
@@ -39,5 +40,7 @@ void Performance::print() {
         std::cout << "count: " << entry.second.size() << '\n';
         std::cout << "average: " << average(entry.second) << '\n';
         std::cout << "mediana: " << mediana(entry.second) << '\n';
+        std::cout << "max: " << *std::max_element(entry.second.begin(), entry.second.end()) << '\n';
+        std::cout << "min: " << *std::min_element(entry.second.begin(), entry.second.end()) << '\n';
     }
 }

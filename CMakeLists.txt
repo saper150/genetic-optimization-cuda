@@ -3,7 +3,7 @@ enable_language(CUDA)
 project (Optimization)
 include_directories(./)
 
-set(CMAKE_CUDA_FLAGS "--expt-extended-lambda -arch=sm_50 -Xptxas -O3 -Xcompiler -O3")
+set(CMAKE_CUDA_FLAGS "--default-stream per-thread --expt-extended-lambda -arch=sm_50 -Xptxas -O3 -Xcompiler -fopenmp -Xcompiler -O3")
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -30,7 +30,7 @@ add_executable(Optimization.out
     ./genetics/Randomize.cu
 
     ./Knn/Knn.test.cu
-    ./Performance/Performance.cpp
+    ./Performance/Performance.cu
     ./sorting/sorting.test.cu
     ./integration.test.cu
 )
@@ -43,5 +43,15 @@ add_executable(Optimization.out
 #     ./Performance/Performance.cpp
 # )
 
-target_link_libraries (Optimization.out libcurand.so)
+find_library(GOMP_LIBRARY gomp)
+
+if (NOT GOMP_LIBRARY)
+
+  message(SEND_ERROR "gomp library not found")
+
+endif()
+
+# target_link_libraries(mytarget )
+
+target_link_libraries (Optimization.out libcurand.so ${GOMP_LIBRARY})
 # target_link_libraries (Optimization.a.out libcurand.so)

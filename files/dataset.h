@@ -36,8 +36,3 @@ template <int size> struct DataSetLoader {
     }
 };
 
-template <int size>
-thrust::host_vector<DataPoint<int, size>> loadDataset(std::string fileName) {
-
-    return thrust::host_vector<DataPoint<int, size>>();
-}

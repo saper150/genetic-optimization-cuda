@@ -6,6 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 
 
+class Option {
+    public string Name;
+    public float[] Splits;
+}
+
 class Program {
 
     static string BuildPath(string inputFile, string type) {
@@ -13,30 +18,44 @@ class Program {
         return Path.Combine("./data", Path.GetFileNameWithoutExtension(inputFile), fileName);
     }
 
-    static void CreateDataSets(string inputDataFile) {
-        var reader = new Reader(inputDataFile);
+
+    static void CreateDataSets(Option inputDataFile) {
+        var reader = new Reader(inputDataFile.Name);
         // DataSetHelper.Rescale(reader.dataSet);
 
         DataSetHelper.Normalize(reader.dataSet);
 
         DataSetHelper.Shuffle(reader.dataSet);
-        var splited = DataSetHelper.Split(reader.dataSet, new float[] { 0.8f, 0.2f});
+        var splited = DataSetHelper.Split(reader.dataSet, inputDataFile.Splits);
 
-        DataSetHelper.SaveInto(splited[0], BuildPath(inputDataFile, "train"));
-        DataSetHelper.SaveInto(splited[1], BuildPath(inputDataFile, "test"));
+        DataSetHelper.SaveInto(splited[0], BuildPath(inputDataFile.Name, "train"));
+        DataSetHelper.SaveInto(splited[1], BuildPath(inputDataFile.Name, "test"));
 
 
-        // DataSetHelper.SaveInto(splited[2], BuildPath(inputDataFile, "verify"));
-        Console.Write("attributes count: ");
-        Console.WriteLine(reader.attributeCount);
-        Console.Write("labels count: ");
-        Console.WriteLine(reader.labelToId.Count());
+        using (var writer = new StreamWriter(BuildPath(inputDataFile.Name, "meta"))) {
+            writer.WriteLine("attributes count: " + reader.attributeCount);
+            writer.WriteLine("labels count: " + reader.labelToId.Count());
+        }
+
     }
 
     static void Main(string[] args) {
 
         Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
-        CreateDataSets("iris.csv");
-        // Console.WriteLine("Hello World!");
+        Option[] files = new Option[] {
+            new Option() { Name = "dataSets/iris.csv", Splits = new float[] { 0.8f, 0.2f } },
+            new Option() { Name = "dataSets/magic.csv", Splits = new float[] { 0.05f, 0.015f } },
+            new Option() { Name = "dataSets/banana.csv", Splits = new float[] { 0.05f, 0.015f } },
+            new Option() { Name = "dataSets/ring.csv", Splits = new float[] { 00.05f, 0.015f } },
+            new Option() { Name = "dataSets/spambase.csv", Splits = new float[] { 0.05f, 0.015f } }
+        };
+        Parallel.ForEach(files, file => {
+            CreateDataSets(file);
+        });
+
+        // CreateDataSets("dataSets/magic.csv");
+        // CreateDataSets("dataSets/banana.csv");
+        // CreateDataSets("dataSets/ring.csv");
+        // CreateDataSets("dataSets/spambase.csv");
     }
 }

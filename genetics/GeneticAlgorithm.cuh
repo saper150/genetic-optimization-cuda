@@ -43,13 +43,10 @@ template <typename T, typename Fitness> class GeneticAlgorithm {
     GeneticAlgorithm(const int popSize, Fitness fitness)
         : popSize(popSize), fitness(fitness), fitnessValues(popSize) {
 
-        Performance::mesure("alocate population", [&]() {
             populationA = Population<T>(popSize, fitness.genSize());
             populationB = Population<T>(popSize, fitness.genSize());
-        });
 
-        Performance::mesure("randomize population",
-                            [&]() { randomize(populationA.population); });
+            randomize(populationA.population);
     };
 
     void iterate() {
